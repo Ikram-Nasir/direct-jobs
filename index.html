@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DirectJobs — AI-Verified Employer Job Portal</title>
+  <meta name="description" content="100% free, scam-free job board linking directly to official employer career portals across UAE, Pakistan, and Remote roles." />
+  <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-emerald-800 text-white py-10 px-4 shadow-md">
+    <div class="max-w-4xl mx-auto">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h1 class="text-3xl font-extrabold tracking-tight">DirectJobs</h1>
+        <span id="jobCount" class="bg-emerald-900/70 text-emerald-100 text-sm px-3 py-1 rounded-full border border-emerald-600">
+          Loading verified roles...
+        </span>
+      </div>
+      <p class="text-emerald-100 mt-2 max-w-2xl">
+        AI-curated vacancies linking straight to official employer portals. Zero middlemen, zero fees, zero cookies.
+      </p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-4xl w-full mx-auto p-4 mt-6 flex-1">
+    <!-- Filters -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+      <input id="searchInput" type="text" placeholder="Search role or company..." 
+             class="md:col-span-2 p-3 rounded-lg border border-slate-300 shadow-sm focus:outline-emerald-600" />
+      <select id="locationFilter" class="p-3 rounded-lg border border-slate-300 bg-white shadow-sm">
+        <option value="ALL">All Locations</option>
+        <option value="Remote">Remote</option>
+        <option value="UAE">UAE</option>
+        <option value="Pakistan">Pakistan</option>
+        <option value="Global">Global</option>
+      </select>
+    </div>
+
+    <!-- Job Cards -->
+    <div id="jobList" class="space-y-4"></div>
+  </main>
+
+  <!-- Privacy-First Footer -->
+  <footer class="bg-slate-900 text-slate-400 text-sm py-6 px-4 mt-12">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>Updated daily via AI • Listings auto-expire after 30 days</p>
+      <p>No Ads • No Tracking Cookies • Direct Employer Links Only</p>
+    </div>
+  </footer>
+
+  <script>
+    let jobs = [];
+    const jobList = document.getElementById("jobList");
+    const jobCount = document.getElementById("jobCount");
+    const searchInput = document.getElementById("searchInput");
+    const locationFilter = document.getElementById("locationFilter");
+
+    async function loadJobs() {
+      try {
+        const res = await fetch("jobs.json?v=" + Date.now());
+        jobs = await res.json();
+        renderJobs();
+      } catch (err) {
+        jobCount.textContent = "0 roles";
+        jobList.innerHTML = `<div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg">No jobs loaded yet. Run your GitHub Action workflow to populate <code>jobs.json</code>.</div>`;
+      }
+    }
+
+    function copyLink(url, btn) {
+      navigator.clipboard.writeText(url);
+      const original = btn.textContent;
+      btn.textContent = "Copied!";
+      setTimeout(() => btn.textContent = original, 1500);
+    }
+
+    function renderJobs() {
+      const query = searchInput.value.toLowerCase();
+      const loc = locationFilter.value;
+
+      const filtered = jobs.filter(j =>
+        (j.title.toLowerCase().includes(query) || j.company.toLowerCase().includes(query)) &&
+        (loc === "ALL" || j.location === loc)
+      );
+
+      jobCount.textContent = `${filtered.length} Verified Direct Roles`;
+
+      if (filtered.length === 0) {
+        jobList.innerHTML = `<p class="text-slate-500 text-center py-8">No matching roles found. Try clearing your filters.</p>`;
+        return;
+      }
+
+      jobList.innerHTML = filtered.map(job => `
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-emerald-400 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-semibold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded">✓ Official Portal</span>
+              <span class="text-xs font-medium bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded">${job.location}</span>
+            </div>
+            <h2 class="text-lg font-bold mt-2 text-slate-900">${job.title}</h2>
+            <p class="text-slate-600 text-sm mt-0.5">${job.company} • Verified ${job.posted_date}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="copyLink('${job.url}', this)" 
+                    class="border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium px-3 py-2.5 rounded-lg transition">
+              Share
+            </button>
+            <a href="${job.url}" target="_blank" rel="noopener noreferrer" 
+               class="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-5 py-2.5 rounded-lg text-center transition">
+              Apply Direct ↗
+            </a>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    searchInput.addEventListener("input", renderJobs);
+    locationFilter.addEventListener("change", renderJobs);
+    loadJobs();
+  </script>
+</body>
+</html>
