@@ -1,0 +1,45 @@
+name: Daily AI Job Scraper
+
+on:
+  schedule:
+    # Runs automatically every day at 06:00 UTC (11:00 AM PKT)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Allows you to click "Run workflow" manually anytime
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests openai
+
+      - name: Run AI Scraper
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: python scraper.py
+
+      - name: Commit and push updated jobs.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "AI Job Bot"
+          git add jobs.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update verified jobs" && git push)
+
+        - name: Run AI Scraper
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scraper.py
